@@ -92,6 +92,21 @@
   </rule>
 
   <rule>
+    <from>^/events/(.*)/sessions/(.*)/invalidate</from>
+    <set name="eventName">$1</set>
+    <set name="sessionName">$2</set>
+    <to last="true">/events/event/sessions/session/invalidate.jspx</to>
+  </rule>
+<!--
+  <rule>
+    <from>^/events/(.*)/sessions/(.*)/edit$</from>
+    <set name="eventName">$1</set>
+    <set name="sessionName">$2</set>
+    <to last="true">/events/event/sessions/session/edit.jspx</to>
+  </rule>
+-->
+
+  <rule>
     <from>^/events/(.*)/sessions/(.*)$</from>
     <set name="eventName">$1</set>
     <set name="sessionName">$2</set>

@@ -12,12 +12,15 @@ import fj.Unit;
 import fj.control.parallel.Callables;
 import fj.data.Either;
 import static fj.data.Either.joinRight;
+import static fj.data.Either.left;
+import static fj.data.Either.right;
 import static fj.data.Either.rights;
 import fj.data.List;
 import fj.data.Option;
 import fj.data.TreeMap;
 import no.java.ems.domain.Binary;
 import no.java.ems.domain.Speaker;
+import no.java.ems.domain.UriBinary;
 import static no.java.incogito.Functions.compose;
 import static no.java.incogito.application.EmsFunctions.eventFromEms;
 import static no.java.incogito.application.EmsFunctions.sessionFromEms;
@@ -25,6 +28,7 @@ import no.java.incogito.application.IncogitoConfiguration.EventConfiguration;
 import static no.java.incogito.application.IncogitoConfiguration.unconfigured;
 import static no.java.incogito.application.OperationResult.notFound;
 import static no.java.incogito.application.OperationResult.ok;
+import no.java.incogito.domain.ContentType;
 import no.java.incogito.domain.Event;
 import no.java.incogito.domain.Label;
 import no.java.incogito.domain.Level;
@@ -44,6 +48,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
+import java.net.URI;
 
 /**
  * @author <a href="mailto:trygvis@java.no">Trygve Laugst&oslash;l</a>
@@ -263,6 +268,104 @@ public class DefaultIncogitoApplication implements IncogitoApplication, Initiali
 
         return result.either(OperationResult.<byte[]>notFound_(), OperationResult.<byte[]>ok_());
     }
+
+    /**
+     * The return type is nasty
+     */
+    public Either<String, P2<ContentType, URI>> getAttachmentForSession(String sessionId, String filename) {
+        Either<String, no.java.ems.domain.Session> sessionEither = emsWrapper.getSessionById.f(sessionId);
+
+        if (sessionEither.isLeft()) {
+            return left(sessionEither.left().value());
+        }
+
+        no.java.ems.domain.Session session = sessionEither.right().value();
+
+        Binary binary = null;
+        for (Binary b : session.getAttachements()) {
+            if (b.getFileName().equals(filename)) {
+                binary = b;
+                break;
+            }
+        }
+
+        if (binary == null) {
+            return left("No such attachment: '" + filename + "'.");
+        }
+
+        if (!(binary instanceof UriBinary)) {
+            return left("No not a URI attachment: '" + filename + "'.");
+        }
+
+        UriBinary uriBinary = (UriBinary) binary;
+
+        return right(P.<ContentType, URI>p(new ContentType(binary.getMimeType()), uriBinary.getUri()));
+
+//        return Callables.either(EmsWrapper.fetchBinary.f(binary))._1().
+//                left().map(Bottom.<Exception>eMessage()).
+//                right().map(P.<ContentType, byte[]>p2().f(new ContentType(binary.getMimeType())));
+    }
+
+    public void clearSessionCache(String sessionId) {
+        emsWrapper.evictSession.e(sessionId);
+    }
+
+//    public OperationResult<Unit> addAttachment(String sessionId, Attachment attachment) {
+//        Either<String, no.java.ems.domain.Session> sessionEither = emsWrapper.getSessionById.f(sessionId);
+//
+//        if (sessionEither.isLeft()) {
+//            return notFound(sessionEither.left().value());
+//        }
+//
+//        no.java.ems.domain.Session session = sessionEither.right().value();
+//
+//        System.out.println("attachment.url = " + attachment.url);
+//
+//        UriBinary binary = new UriBinary(UUID.randomUUID().toString(),
+//                attachment.fileName,
+//                attachment.contentType.toString(),
+//                attachment.size,
+//                URI.create(attachment.url));
+//
+//        java.util.List<Binary> binaryList = new ArrayList<Binary>(session.getAttachements());
+//        binaryList.add(binary);
+//        session.setAttachements(binaryList);
+//
+//        emsWrapper.saveSession.e(session);
+//
+//        return ok(unit());
+//    }
+
+//    public OperationResult<Unit> updateAttachment(String sessionId, Attachment attachment) {
+//        Either<String, no.java.ems.domain.Session> sessionEither = emsWrapper.getSessionById.f(sessionId);
+//
+//        if (sessionEither.isLeft()) {
+//            return notFound(sessionEither.left().value());
+//        }
+//
+//        no.java.ems.domain.Session session = sessionEither.right().value();
+//
+//        java.util.List<Binary> attachments = session.getAttachements();
+//        for (int i = 0, attachmentsSize = attachments.size(); i < attachmentsSize; i++) {
+//            Binary b = attachments.get(i);
+//            if (attachment.fileName.equals(b.getFileName())) {
+//                java.util.List<Binary> binaryList = new ArrayList<Binary>(session.getAttachements());
+//
+//                UriBinary binary = new UriBinary(b.getId(),
+//                        attachment.fileName,
+//                        attachment.contentType.toString(),
+//                        attachment.size,
+//                        URI.create(attachment.url));
+//
+//                binaryList.set(i, binary);
+//                session.setAttachements(binaryList);
+//                emsWrapper.saveSession.e(session);
+//                break;
+//            }
+//        }
+//
+//        return ok(unit());
+//    }
 
     // -----------------------------------------------------------------------
     //

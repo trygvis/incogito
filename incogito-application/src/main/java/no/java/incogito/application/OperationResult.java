@@ -5,10 +5,9 @@ import fj.Effect;
 import fj.F;
 import fj.P1;
 import fj.Unit;
-import fj.data.Option;
 import fj.data.Either;
+import fj.data.Option;
 import static fj.data.Option.some;
-import no.java.incogito.domain.Event;
 
 /**
  * @author <a href="mailto:trygve.laugstol@arktekk.no">Trygve Laugst&oslash;l</a>

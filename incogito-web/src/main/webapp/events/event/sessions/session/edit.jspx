@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en"
+      xmlns:jsp="http://java.sun.com/JSP/Page"
+      xmlns:c="http://java.sun.com/jsp/jstl/core"
+      xmlns:fmt="http://java.sun.com/jsp/jstl/fmt"
+      xmlns:fn="http://java.sun.com/jsp/jstl/functions"
+      xmlns:i="http://taglib.java.no/incogito">
+<jsp:directive.page pageEncoding="UTF-8" contentType="text/html;charset=utf-8"/>
+<jsp:useBean id="incogito" type="no.java.incogito.application.IncogitoConfiguration" scope="request"/>
+<jsp:useBean id="app" type="no.java.incogito.application.IncogitoApplication" scope="application"/>
+<jsp:useBean id="eventName" type="java.lang.String" scope="request"/>
+<jsp:useBean id="sessionName" type="java.lang.String" scope="request"/>
+<c:set var="session" value="${i:getSessionByTitle(app, eventName, sessionName)}"/>
+<c:set var="eventName" value="${i:urlDecode(eventName)}"/>
+
+<head>
+  <title>${session.title} - ${eventName} - </title>
+  <link rel="stylesheet" type="text/css" href="${incogito.baseurl}/css/session.css"/>
+  <link rel="stylesheet" type="text/css" href="${incogito.baseurl}/rest/events/${eventName}/session.css"/>
+  <style type="text/css">
+    table {
+      width: 100%;
+    }
+
+    tr {
+      border-top: black dashed thin;
+    }
+
+    tr:first-child {
+      border-top: 0;
+    }
+
+    th {
+      text-align: left;
+    }
+
+    th#operations {
+      text-align: center;
+    }
+
+    #content-type {
+      width: 28em;
+    }
+
+    .content-type-input {
+      width: 26em;
+    }
+
+    #size {
+      width: 7em;
+    }
+
+    .size-input {
+      width: 5em;
+    }
+
+    #file-name {
+      width: 23em;
+    }
+
+    .file-name-input {
+      width: 22em;
+    }
+
+    #attachment-uri {
+      width: 7em;
+    }
+
+    .attachment-uri-input {
+      width: 5em;
+    }
+
+    input {
+      border: thin solid;
+    }
+
+/*
+    #operations {
+      width: 17em;
+    }
+*/
+
+    .operations {
+      text-align: center;
+    }
+
+    #message {
+      float: right;
+      color: red;
+    }
+  </style>
+  <script type="text/javascript">
+    $(document).ready(function() {
+      var message = $("#message");
+
+      var addButton = $("#add-button");
+      var saveButton = $("#save-button");
+      var deleteButton = $(".delete-button");
+
+      addButton.bind("click", onAddClicked)
+      saveButton.bind("click", onSaveClicked)
+      $(".save-button").bind("click", onSaveClicked)
+      $(".edit-button").bind("click", onEditClicked)
+      deleteButton.bind("click", onDeleteClicked)
+
+      function isValid(contentType, size, fileName) {
+        if($.trim(contentType) == "") {
+          message.text("Invalid content type").show();
+          return false;
+        }
+
+        if(!new RegExp("[0-9]").test($.trim(size))) {
+          message.text("Invalid size. Must be all digits").show();
+          return false;
+        }
+
+        if($.trim(fileName) == "") {
+          message.text("Invalid file name").show();
+          return false;
+        }
+
+        return true;
+      }
+
+      function onAddClicked() {
+        var parent = $(this).parent().parent()
+        message.text("").hide();
+        saveButton.show()
+        addButton.hide()
+        parent.find("input").val("").show()
+        return false;
+      };
+
+      function onEditClicked() {
+        var parent = $(this).parent().parent()
+        console.log(parent)
+
+        parent.find("input.content-type-input").val(parent.find("div.content-type").text())
+        parent.find("input.size-input").val(parent.find("div.size").text())
+        parent.find("input.file-name-input").val(parent.find("div.file-name").text())
+        parent.find("input.attachment-uri-input").val(parent.find("div.attachment-uri").text())
+
+        parent.find("input").show()
+        parent.find(".readonly-text").hide()
+        parent.find("span.edit-button").hide()
+        parent.find("span.save-button").show()
+
+        message.text("").hide();
+        return false;
+      };
+
+      function onSaveClicked() {
+        var parent = $(this).parent().parent()
+        var isUpdate = parent.find(".update-url").size() == 1
+        var contentType = parent.find(".content-type-input").val()
+        var size = parent.find(".size-input").val()
+        var fileName = parent.find(".file-name-input").val()
+        var attachmentUri = parent.find(".attachment-uri-input").val()
+
+        if(!isValid(contentType, size, fileName)) {
+          return
+        }
+
+        message.text("Saving...").show();
+
+        var url = isUpdate ? parent.find(".update-url").text() : $("#url").text();
+
+        if(isUpdate) {
+          updateAttachment(url, fileName, contentType, size, attachmentUri, function() {
+            message.text("Saved!").show();
+
+            parent.find("span.edit-button").show()
+            parent.find("span.save-button").hide()
+          }, function(xhr) {
+            message.text("Failed: " + xhr.statusText).show();
+          })
+        }
+        else {
+          addAttachment(url, fileName, contentType, size, attachmentUri, function() {
+            message.text("Added").show();
+
+            saveButton.hide()
+            addButton.show()
+          }, function(xhr) {
+            message.text("Failed: " + xhr.statusText).show();
+          })
+        }
+
+        parent.find("input").hide()
+        parent.find(".readonly-text").show()
+      }
+
+      function onDeleteClicked() {
+        var url = $(this).parent().parent().find(".update-url").text()
+        console.log("url: " + url)
+      }
+    })
+  </script>
+</head>
+
+<body>
+<div id="main-content">
+  <div id="message"><!-- space --></div>
+  <h2>Edit: ${session.title}</h2>
+  <div id="url" class="hidden">${session.addAttachmentUrl}</div>
+
+  <form id="form" action="#">
+  <table>
+    <tr>
+      <th id="content-type">Content type</th>
+      <th id="size">Size</th>
+      <th id="file-name">File name</th>
+      <th id="attachment-uri">URI</th>
+      <th id="operations">Operations</th>
+    </tr>
+    <c:forEach var="attachment" items="${session.attachments}">
+      <tr class="attachment">
+        <td>
+          <input class="content-type-input hidden" name="contentType" value="${attachment.contentType}"/>
+          <div class="content-type readonly-text">${attachment.contentType}</div>
+        </td>
+        <td>
+          <input class="size-input hidden" name="size" value="${attachment.size}"/>
+          <div class="size readonly-text">${attachment.size}</div>
+        </td>
+        <td>
+          <input class="file-name-input hidden" name="fileName" value="${attachment.fileName}"/>
+          <div class="file-name readonly-text">${attachment.fileName}</div>
+        </td>
+        <td>
+          <input class="attachment-uri-input hidden" name="fileName" value="${attachment.attachmentUri}"/>
+          <div class="attachment-uri hidden">${attachment.attachmentUri}</div>
+        </td>
+        <td class="operations">
+          <div class="update-url hidden">${attachment.selfUri}</div>
+          <a href="${attachment.attachmentUri}">Download</a><br/>
+          <span class="edit-button">Edit</span><span class="save-button hidden">Save</span><br/>
+          <span class="delete-button">Delete</span>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="5">
+          <a href="${attachment.selfUri}">${attachment.fileName}</a>
+        </td>
+      </tr>
+    </c:forEach>
+    <tr class="attachment add-row">
+      <td><input class="hidden content-type-input" name="addContentType"/></td>
+      <td><input class="hidden size-input" name="addSize"/></td>
+      <td><input class="hidden file-name-input" name="addFileName"/></td>
+      <td><input class="hidden attachment-uri-input" name="addAttachmentUri"/></td>
+      <td class="operations">
+        <div id="add-button">Add</div><div id="save-button" class="hidden">Save</div>
+      </td>
+    </tr>
+  </table>
+  </form>
+</div>
+</body>
+</html>

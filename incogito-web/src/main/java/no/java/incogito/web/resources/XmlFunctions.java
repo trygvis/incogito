@@ -3,8 +3,8 @@ package no.java.incogito.web.resources;
 import fj.F;
 import fj.F2;
 import fj.F3;
-import fj.P2;
 import static fj.Function.curry;
+import fj.P2;
 import fj.data.List;
 import no.java.incogito.Enums;
 import static no.java.incogito.Functions.compose;
@@ -101,6 +101,8 @@ public class XmlFunctions {
     public static final F<IncogitoRestEventUri, F<IncogitoEventUri, F<Session, SessionXml>>> sessionToXml = curry(new F3<IncogitoRestEventUri, IncogitoEventUri, Session, SessionXml>() {
         public SessionXml f(IncogitoRestEventUri restEventUri, IncogitoEventUri eventUri, Session session) {
             IncogitoRestSessionUri restSessionUri = restEventUri.session(session);
+            System.out.println("session.audioAttachment.map(restSessionUri.attachmentUrl) = " + session.audioAttachment.map(restSessionUri.attachmentUrl));
+            System.out.println("session.videoAttachment.map(restSessionUri.attachmentUrl) = " + session.videoAttachment.map(restSessionUri.attachmentUrl));
             return new SessionXml(restSessionUri.toString(),
                     eventUri.session(session),
                     SessionXml.FormatXml.valueOf(session.format.name()),
@@ -112,7 +114,11 @@ public class XmlFunctions {
                     session.timeslot.map(compose(toXmlGregorianCalendar, Interval_start)),
                     session.timeslot.map(compose(toXmlGregorianCalendar, Interval_end)),
                     session.speakers.zipIndex().map(speakerToXml.f(restSessionUri)),
-                    session.labels.map(labelToXml.f(restEventUri.labelsIcon())));
+                    session.labels.map(labelToXml.f(restEventUri.labelsIcon())),
+                    restSessionUri.addAttachmentUrl(),
+                    session.pdfAttachment.map(restSessionUri.attachmentUrl),
+                    session.audioAttachment.map(restSessionUri.attachmentUrl),
+                    session.videoAttachment.map(restSessionUri.attachmentUrl));
         }
     });
 

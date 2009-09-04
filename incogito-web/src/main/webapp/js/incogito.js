@@ -120,5 +120,42 @@ function updateInterest(eventName, sessionUrl, state, success, unauthorized) {
     })
 }
 
+function addAttachment(url, fileName, contentType, size, uri, success, fail) {
+    console.log("Adding attachment: fileName=" + fileName + ", contentType=" + contentType + ", size=" + size + ": " + url)
+
+    return mainpulateAttachment(url, fileName, contentType, size, uri, success, fail, "POST");
+}
+
+function updateAttachment(url, fileName, contentType, size, uri, success, fail) {
+    console.log("Update attachment: fileName=" + fileName + ", contentType=" + contentType + ", size=" + size + ": " + url)
+
+    return mainpulateAttachment(url, fileName, contentType, size, uri, success, fail, "PUT");
+}
+
+function mainpulateAttachment(url, fileName, contentType, size, uri, success, fail, method) {
+    $.ajax({
+        dataType: "json",
+        url: url,
+        type: method,
+        contentType: "application/json",
+        data: $.json.encode({fileName: fileName, contentType: contentType, size: size, attachmentUri: uri}),
+        complete: function(xhr) {
+            switch (xhr.status) {
+                case 200:
+                case 201:
+                    console.log("Attachment created!")
+                    if(typeof success == "function") {
+                        success();
+                    }
+                    break;
+                default:
+                    if(typeof fail == "function") {
+                        fail(xhr);
+                    }
+            }
+        }
+    })
+}
+
 Functional.install()
 createConsole()

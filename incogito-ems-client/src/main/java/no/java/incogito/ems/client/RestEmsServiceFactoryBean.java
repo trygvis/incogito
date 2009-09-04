@@ -19,6 +19,10 @@ public class RestEmsServiceFactoryBean implements FactoryBean {
 
     private boolean cache;
 
+    private String username;
+
+    private String password;
+
     @Required
     public void setBaseurl(String baseurl) {
         this.baseurl = baseurl;
@@ -28,10 +32,20 @@ public class RestEmsServiceFactoryBean implements FactoryBean {
         this.cache = cache;
     }
 
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
     public Object getObject() throws Exception {
         log.info("Creating EMS client. Cache=" + cache + ", URL=" + baseurl);
 
-        return new RestEmsService(baseurl, cache);
+        RestEmsService service = new RestEmsService(baseurl, cache);
+        service.setCredentials(username, password);
+        return service;
     }
 
     public Class getObjectType() {

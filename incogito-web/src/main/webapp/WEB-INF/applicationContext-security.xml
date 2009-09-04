@@ -17,6 +17,7 @@
     -->
     <security:intercept-url pattern="/js/**" filters="none"/>
     <security:intercept-url pattern="/**/my-*" access="ROLE_USER"/>
+    <security:intercept-url pattern="/**/edit" access="ROLE_CONTENT"/>
     <security:intercept-url pattern="/**"/>
   </security:http>
 

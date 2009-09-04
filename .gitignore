@@ -19,3 +19,4 @@ pom.xml.releaseBackup
 release.properties
 incogito-application/src/test/resources/cluster-it/node-it/etc/
 jmeter/*.*
+incogito-web/src/test/resources/incogito.properties

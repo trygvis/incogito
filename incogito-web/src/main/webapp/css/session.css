@@ -1,3 +1,11 @@
+div#downloads {
+  float: left
+}
+
+div#downloads img {
+  vertical-align: middle;
+}
+
 div.speaker {
   clear: both;
 }

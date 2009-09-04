@@ -1,5 +1,7 @@
 package no.java.incogito.domain;
 
+import fj.F;
+
 import javax.ws.rs.core.UriBuilder;
 import static javax.ws.rs.core.UriBuilder.fromUri;
 
@@ -145,10 +147,12 @@ public class IncogitoUri {
             public static class IncogitoRestSessionUri {
                 private final UriBuilder session;
                 private final UriBuilder photos;
+                private final UriBuilder attachments;
 
                 public IncogitoRestSessionUri(UriBuilder session) {
                     this.session = session;
                     photos = session.clone().segment("speaker-photos");
+                    attachments = session.clone().segment("attachments");
                 }
 
                 public String speakerPhoto(int i) {
@@ -159,6 +163,20 @@ public class IncogitoUri {
                 public String toString() {
                     return session.build().toString();
                 }
+
+                public String attachmentUrl(Attachment attachment) {
+                    return attachments.clone().segment(attachment.fileName).build().toString();
+                }
+
+                public String addAttachmentUrl() {
+                    return attachments.build().toString();
+                }
+
+                public F<Attachment, String> attachmentUrl = new F<Attachment, String>() {
+                    public String f(Attachment attachment) {
+                        return attachmentUrl(attachment);
+                    }
+                };
             }
         }
     }

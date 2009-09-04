@@ -4,7 +4,9 @@ import fj.F;
 import fj.F2;
 import static fj.Function.curry;
 import fj.P1;
+import fj.P2;
 import fj.control.parallel.Callables;
+import fj.data.Either;
 import fj.data.Java;
 import fj.data.List;
 import fj.data.Option;
@@ -20,6 +22,7 @@ import no.java.incogito.application.OperationResult;
 import no.java.incogito.application.OperationResult.NotFoundOperationResult;
 import no.java.incogito.application.OperationResult.OkOperationResult;
 import static no.java.incogito.application.OperationResult.fromOption;
+import no.java.incogito.domain.ContentType;
 import no.java.incogito.domain.Event;
 import no.java.incogito.domain.IncogitoUri;
 import no.java.incogito.domain.IncogitoUri.IncogitoEventsUri.IncogitoEventUri;
@@ -52,14 +55,17 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.CacheControl;
 import javax.ws.rs.core.Context;
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
+import static javax.ws.rs.core.Response.status;
 import javax.ws.rs.core.SecurityContext;
 import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URL;
 
 /**
  * REST-ful wrapper around IncogitoApplication.
@@ -77,14 +83,9 @@ public class IncogitoResource {
 
     private final IncogitoApplication incogito;
 
-    private final CacheControl cacheForOneHourCacheControl;
-
     @Autowired
     public IncogitoResource(IncogitoApplication incogito) {
         this.incogito = incogito;
-
-        cacheForOneHourCacheControl = new CacheControl();
-        cacheForOneHourCacheControl.setMaxAge(3600);
     }
 
     @GET
@@ -225,6 +226,139 @@ public class IncogitoResource {
         return toJsr311(incogito.getSpeakerPhotoForSession(sessionId, index), cacheForOneHourCacheControl);
     }
 
+    @Path("/events/{eventName}/sessions/{sessionId}/attachments/{fileName}")
+    @GET
+    public Response getAttachment(@PathParam("eventName") final String eventName,
+                                  @PathParam("sessionId") final String sessionId,
+                                  @PathParam("fileName") final String filename) {
+/*
+        Either<String, P2<ContentType, byte[]>> result = incogito.getAttachmentForSession(sessionId, filename);
+
+        if (result.isLeft()) {
+            return toJsr311(OperationResult.<Object>notFound(result.left().value()));
+        }
+
+        P2<ContentType, byte[]> p = result.right().value();
+
+        return toJsr311(OperationResult.ok(p._2()), compose(cacheForOneHourCacheControl, type.f(p._1())));
+*/
+/*
+        Either<String, P2<ContentType, URI>> result = incogito.getAttachmentForSession(sessionId, filename);
+
+        if (result.isLeft()) {
+            return toJsr311(OperationResult.<Object>notFound(result.left().value()));
+        }
+
+        return temporaryRedirect(result.right().value()._2()).
+                type(MediaType.valueOf(result.right().value()._1().toString())).
+                build();
+*/
+        Either<String, P2<ContentType, URI>> result = incogito.getAttachmentForSession(sessionId, filename);
+
+        if (result.isLeft()) {
+            return toJsr311(OperationResult.<Object>notFound(result.left().value()));
+        }
+
+        try {
+            String mediaType = result.right().value()._1().toString();
+
+            if (filename.endsWith("audio.mp4")) {
+                mediaType = "audio/mpeg";
+            } else if (filename.endsWith(".mp4")) {
+                mediaType = "video/mpeg";
+            }
+
+            return Response.ok(result.right().value()._2().toURL().openStream()).
+                type(MediaType.valueOf(mediaType)).
+                build();
+        } catch (IOException e) {
+            return status(Status.INTERNAL_SERVER_ERROR).
+                    type(MediaType.TEXT_PLAIN_TYPE).
+                    entity(e.getMessage()).
+                    build();
+        }
+    }
+
+//    @POST
+//    @Path("/events/{eventName}/sessions/{sessionId}/attachments")
+//    @Produces("application/json")
+//    @Consumes("application/json")
+//    public Response addAttachment(@PathParam("eventName") final String eventName,
+//                                  @PathParam("sessionId") final String sessionId,
+//                                  @Context UriInfo uriInfo,
+//                                  AttachmentXml attachmentXml) {
+//        Option<Response> responseOption = isValidAttachment(attachmentXml);
+//        if (responseOption.isSome()) {
+//            return responseOption.some();
+//        }
+//
+//        Attachment attachment = new Attachment(attachmentXml.getFileName(),
+//                new ContentType(attachmentXml.getContentType()),
+//                attachmentXml.getSize(),
+//                attachmentXml.getAttachmentUri());
+//        OperationResult<Unit> result = incogito.addAttachment(sessionId, attachment);
+//
+//        URI uri = uriInfo.getRequestUriBuilder().segment(attachmentXml.getFileName()).build();
+//
+//        return this.<String>defaultResponsePatternMatcher().
+//                add(OkOperationResult.class, this.<OperationResult<String>>createdWithUri().f(uri)).
+//                match(result.ok().map(Function.<Unit, String>constant("Updated")));
+//    }
+
+//    @PUT
+//    @Path("/events/{eventName}/sessions/{sessionId}/attachments/{fileName}")
+//    @Produces("application/json")
+//    @Consumes("application/json")
+//    public Response updateAttachment(@PathParam("eventName") final String eventName,
+//                                     @PathParam("sessionId") final String sessionId,
+//                                     @PathParam("fileName") final String fileName,
+//                                     AttachmentXml attachmentXml) {
+//        Option<Response> responseOption = isValidAttachment(attachmentXml);
+//        if (responseOption.isSome()) {
+//            return responseOption.some();
+//        }
+//
+//        if(!attachmentXml.getFileName().equals(fileName)) {
+//            ResponseBuilder builder = status(Status.BAD_REQUEST).
+//                    header(HttpHeaders.CONTENT_TYPE, MediaType.TEXT_PLAIN).
+//                    entity("!attachmentXml.getFileName().equals(fileName)");
+//            return builder.build();
+//        }
+//
+//        System.out.println("attachmentXml.getAttachmentUri() = " + attachmentXml.getAttachmentUri());
+//        Attachment attachment = new Attachment(attachmentXml.getFileName(),
+//                new ContentType(attachmentXml.getContentType()),
+//                attachmentXml.getSize(),
+//                attachmentXml.getAttachmentUri());
+//        OperationResult<Unit> result = incogito.updateAttachment(sessionId, attachment);
+//
+//        return toJsr311(result.ok().map(Function.<Unit, String>constant("Updated")));
+//    }
+
+//    private Option<Response> isValidAttachment(AttachmentXml attachmentXml) {
+//        ResponseBuilder builder = status(Status.BAD_REQUEST).
+//                header(HttpHeaders.CONTENT_TYPE, MediaType.TEXT_PLAIN);
+//
+//        if (StringUtils.isEmpty(attachmentXml.getFileName())) {
+//            return some(builder.entity("filename is empty").build());
+//
+//        }
+//        if (StringUtils.isEmpty(attachmentXml.getAttachmentUri())) {
+//            return some(builder.entity("attachment uri is empty").build());
+//
+//        }
+//        if (attachmentXml.getSize() <= 0) {
+//            return some(builder.entity("size is 0").build());
+//
+//        }
+//        if (StringUtils.isEmpty(attachmentXml.getContentType())) {
+//            return some(builder.entity("content type is empty").build());
+//
+//        }
+//
+//        return Option.none();
+//    }
+
     @Path("/events/{eventName}/{sessionId}/session-interest")
     @POST
     public Response setSessionInterest(@Context final SecurityContext securityContext,
@@ -235,7 +369,7 @@ public class IncogitoResource {
         Option<String> userName = getUserName.f(securityContext);
 
         if (userName.isNone()) {
-            return Response.status(Status.UNAUTHORIZED).build();
+            return status(Status.UNAUTHORIZED).build();
         }
 
         OperationResult<User> result = incogito.setInterestLevel(userName.some(),
@@ -294,18 +428,34 @@ public class IncogitoResource {
         }
     });
 
+    private F<ContentType, F<ResponseBuilder, ResponseBuilder>> type = curry(new F2<ContentType, ResponseBuilder, ResponseBuilder>() {
+        public ResponseBuilder f(ContentType contentType, ResponseBuilder responseBuilder) {
+            return responseBuilder.type(contentType.toString());
+        }
+    });
+
+    private final F<ResponseBuilder, ResponseBuilder> cacheForOneHourCacheControl = cacheControl.f(createCacheControl(3600));
+
     private F<ResponseBuilder, Response> build = new F<ResponseBuilder, Response>() {
         public Response f(ResponseBuilder responseBuilder) {
             return responseBuilder.build();
         }
     };
 
+    private <T> F<URI, F<T, Response>> createdWithUri() {
+        return curry( new F2<URI, T, Response>() {
+            public Response f(URI uri, T t) {
+                return status(Status.CREATED).
+                        header("Location", uri.toString()).
+                        build();
+            }
+        });
+    }
+
     private <T> F<T, Response> created() {
         return new F<T, Response>() {
             public Response f(T operationResult) {
-                Object value = ((OperationResult) operationResult).value();
-                ToStringBuilder.reflectionToString(value, ToStringStyle.MULTI_LINE_STYLE);
-                return Response.status(Status.CREATED).build();
+                return status(Status.CREATED).build();
             }
         };
     }
@@ -315,8 +465,8 @@ public class IncogitoResource {
             public Response f(T operationResult) {
                 NotFoundOperationResult o = (NotFoundOperationResult) operationResult;
 
-                return Response.status(NOT_FOUND).
-                        header(HttpHeaders.CONTENT_TYPE, MediaType.TEXT_PLAIN).
+                return status(NOT_FOUND).
+                        type(MediaType.TEXT_PLAIN).
                         entity(o.message + "\n").
                         build();
             }
@@ -334,9 +484,9 @@ public class IncogitoResource {
                 match(result);
     }
 
-    private <T> Response toJsr311(OperationResult<T> result, CacheControl cacheControl) {
+    private <T> Response toJsr311(OperationResult<T> result, F<Response.ResponseBuilder, Response.ResponseBuilder> map) {
         return this.<T>defaultResponsePatternMatcher().
-                add(OkOperationResult.class, compose(build, this.cacheControl.f(cacheControl), this.<OperationResult<T>>ok())).
+                add(OkOperationResult.class, compose(build, map, this.<OperationResult<T>>ok())).
                 match(result);
     }
 
@@ -345,4 +495,10 @@ public class IncogitoResource {
             return securityContext.getUserPrincipal() == null ? Option.<String>none() : fromString(securityContext.getUserPrincipal().getName());
         }
     };
+
+    private CacheControl createCacheControl(int time) {
+        CacheControl cacheForOneHourCacheControl = new CacheControl();
+        cacheForOneHourCacheControl.setMaxAge(time);
+        return cacheForOneHourCacheControl;
+    }
 }

@@ -37,6 +37,10 @@ public class SessionXml {
     public XMLGregorianCalendar end;
     public List<SpeakerXml> speakers = new ArrayList<SpeakerXml>();
     public List<LabelXml> labels = new ArrayList<LabelXml>();
+    public String addAttachmentUrl;
+    public String pdfUrl;
+    public String audioUrl;
+    public String videoUrl;
 
     public SessionXml() {
     }
@@ -44,7 +48,8 @@ public class SessionXml {
     public SessionXml(String selfUri, String sessionHtmlUrl, FormatXml format, String id, String title,
                       Option<String> bodyHtml, Option<LevelXml> level, Option<String> room,
                       Option<XMLGregorianCalendar> start, Option<XMLGregorianCalendar> end,
-                      Iterable<SpeakerXml> speakers, Iterable<LabelXml> labels) {
+                      Iterable<SpeakerXml> speakers, Iterable<LabelXml> labels, String addAttachmentUrl,
+                      Option<String> pdfUrl, Option<String> audioUrl, Option<String> videoUrl) {
         this.selfUri = selfUri;
         this.sessionHtmlUrl = sessionHtmlUrl;
         this.id = id;
@@ -57,6 +62,10 @@ public class SessionXml {
         this.end = end.orSome((XMLGregorianCalendar) null);
         this.speakers = toList(speakers);
         this.labels = toList(labels);
+        this.addAttachmentUrl = addAttachmentUrl;
+        this.pdfUrl = pdfUrl.orSome((String) null);
+        this.audioUrl = audioUrl.orSome((String) null);
+        this.videoUrl = videoUrl.orSome((String) null);
     }
 
     public String getSelfUri() {
@@ -105,5 +114,21 @@ public class SessionXml {
 
     public List<LabelXml> getLabels() {
         return labels;
+    }
+
+    public String getAddAttachmentUrl() {
+        return addAttachmentUrl;
+    }
+
+    public String getPdfUrl() {
+        return pdfUrl;
+    }
+
+    public String getAudioUrl() {
+        return audioUrl;
+    }
+
+    public String getVideoUrl() {
+        return videoUrl;
     }
 }

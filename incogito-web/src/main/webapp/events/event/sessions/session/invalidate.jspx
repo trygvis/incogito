@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<jsp:root xmlns="http://java.sun.com/JSP/Page" version="2.0"
+      xmlns:jsp="http://java.sun.com/JSP/Page"
+      xmlns:c="http://java.sun.com/jsp/jstl/core"
+      xmlns:fmt="http://java.sun.com/jsp/jstl/fmt"
+      xmlns:fn="http://java.sun.com/jsp/jstl/functions"
+      xmlns:i="http://taglib.java.no/incogito">
+<jsp:directive.page import="no.java.incogito.domain.Session"/>
+<jsp:directive.page import="no.java.incogito.application.OperationResult"/>
+<directive.page import="no.java.incogito.web.servlet.IncogitoFunctions"/>
+<directive.page import="no.java.incogito.domain.IncogitoUri"/>
+<directive.page import="no.java.incogito.domain.SessionId"/>
+<directive.page import="java.util.UUID"/>
+<directive.page import="no.java.incogito.domain.Session.Format"/>
+<jsp:useBean id="incogito" type="no.java.incogito.application.IncogitoConfiguration" scope="request"/>
+<jsp:useBean id="app" type="no.java.incogito.application.IncogitoApplication" scope="application"/>
+<jsp:useBean id="eventName" type="java.lang.String" scope="request"/>
+<jsp:useBean id="sessionName" type="java.lang.String" scope="request"/>
+<jsp:scriptlet>
+  String eName = IncogitoFunctions.urlDecode(eventName);
+  String sName = IncogitoFunctions.urlDecode(sessionName);
+  OperationResult result = app.getSessionByTitle(eName, sName);
+  app.clearSessionCache(((Session)result.value()).id.value);
+
+  Session s = Session.emptySession(new SessionId(UUID.randomUUID().toString()), Format.Presentation, sName);
+  String sessionUri = new IncogitoUri(incogito.baseurl).events().eventUri(eName).session(s);
+  response.sendRedirect(sessionUri);
+</jsp:scriptlet>
+</jsp:root>

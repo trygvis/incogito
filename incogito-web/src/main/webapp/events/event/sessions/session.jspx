@@ -20,14 +20,37 @@
 </head>
 
 <body>
-<!--
-<ul>
-  <li><a href="${incogito.baseurl}/events">Back to event list</a></li>
-  <li><a href="${incogito.baseurl}/events/${eventName}">Back to ${eventName}</a></li>
-</ul>
--->
 <div id="main-content">
 <h2>${eventName} - ${session.title}</h2>
+
+<c:if test="${not (session.pdfUrl eq null) or not (session.audioUrl eq null) or not (session.videoUrl eq null)}">
+  <div id="downloads" style="float: right;">
+<!--
+    Download
+-->
+    <c:if test="${not (session.pdfUrl eq null)}">
+      <a href="${session.pdfUrl}">
+        <img src="${incogito.baseurl}/images/icons/x-office-presentation.png"
+             alt="Download the slides from '${session.title}' as PDF"
+             title="Download the slides from '${session.title}' as PDF"/>
+      </a>
+    </c:if>
+    <c:if test="${not (session.audioUrl eq null)}">
+      <a href="${session.audioUrl}">
+        <img src="${incogito.baseurl}/images/icons/audio-x-generic.png"
+             alt="Download the audio recording from '${session.title}' as MP4"
+             title="Download the audio recording from '${session.title}' as MP4"/>
+      </a>
+    </c:if>
+    <c:if test="${not (session.videoUrl eq null)}">
+      <a href="${session.videoUrl}">
+        <img src="${incogito.baseurl}/images/icons/video-x-generic.png"
+             alt="Download the video recording from '${session.title}' as MP4"
+             title="Download the video recording from '${session.title}' as MP4"/>
+      </a>
+    </c:if>
+  </div>
+</c:if>
 
 <ul class="outside session-metadata">
   <c:forEach var="label" items="${session.labels}">

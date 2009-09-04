@@ -13,7 +13,6 @@ import junit.framework.TestCase;
 import no.java.incogito.Functions;
 import no.java.incogito.application.IncogitoConfiguration;
 import static no.java.incogito.application.IncogitoConfiguration.unconfigured;
-import no.java.incogito.domain.Comment;
 import no.java.incogito.domain.CssConfiguration;
 import no.java.incogito.domain.Event;
 import static no.java.incogito.domain.Event.EventId.eventId;
@@ -29,9 +28,7 @@ import no.java.incogito.domain.Schedule;
 import no.java.incogito.domain.Session;
 import static no.java.incogito.domain.Session.Format.Presentation;
 import no.java.incogito.domain.SessionId;
-import no.java.incogito.domain.Speaker;
 import no.java.incogito.domain.UserSessionAssociation;
-import no.java.incogito.domain.WikiString;
 import no.java.incogito.web.servlet.WebCalendar;
 import org.joda.time.DateMidnight;
 import org.joda.time.Duration;
@@ -60,9 +57,7 @@ public class WebFunctionsTest extends TestCase {
         List.<Room>nil(), roomsByDate, TreeMap.<LevelId, Level>empty(LevelId.ord).set(intermediate.id, intermediate),
         List.<Label>nil(), TreeMap.<String, Label>empty(Ord.stringOrd).set(java.id, java));
 
-    Session templateSession = new Session(new SessionId("123"), Presentation, "Session 1",
-            Option.<WikiString>none(), Option.<Level>none(), Option.<Interval>none(), Option.<String>none(),
-        List.<Label>nil(), List.<Speaker>nil(), List.<Comment>nil());
+    Session templateSession = Session.emptySession(new SessionId("123"), Presentation, "Session 1");
 
     Option<String> room1 = some("Room 1");
     Option<String> room2 = some("Room 2");
